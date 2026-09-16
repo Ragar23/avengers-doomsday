@@ -1,6 +1,6 @@
-# Roadmap — Doomsday branch
+# Roadmap — Avengers: Doomsday
 
-This branch is a reskin. The engine, wave system, ultimates framework and
+This game is a reskin. The engine, wave system, ultimates framework and
 smoke test all come from `main`; what changed is the cast, the villains, the
 palette and the menu.
 

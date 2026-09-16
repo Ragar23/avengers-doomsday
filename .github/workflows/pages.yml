@@ -1,20 +1,19 @@
-# Publishes every version of the game from one Pages site:
+# Publishes this repository as its own Pages site, at the root:
 #
-#   /               main         — Marvel Women Assemble
-#   /doomsday/      doomsday     — Avengers: Doomsday
-#   /no-way-home/   no-way-home  — Spider-Man: No Way Home
+#   /   doomsday — Avengers: Doomsday
 #
-# A push to any of them rebuilds all three, so they stay in step. This file
-# lives on all three branches because GitHub runs the copy from whichever
-# branch was pushed — keep them identical.
+# The game is plain HTML, CSS and ES modules, so there is nothing to build;
+# the job only decides what does not belong on the site.
 #
-# Pages must be set to "GitHub Actions" under Settings -> Pages, not
-# "Deploy from a branch", or this workflow builds and nothing goes live.
-name: Deploy every game to Pages
+# `enablement: true` below turns Pages on the first time this runs, so no
+# manual trip to Settings -> Pages is needed. If the site was already set to
+# "Deploy from a branch", change it to "GitHub Actions" or this workflow
+# builds and nothing goes live.
+name: Deploy to Pages
 
 on:
   push:
-    branches: [main, doomsday, no-way-home]
+    branches: [doomsday]
   workflow_dispatch:
 
 permissions:
@@ -22,8 +21,8 @@ permissions:
   pages: write
   id-token: write
 
-# One deploy at a time. A push to the other branch queues behind this run
-# rather than racing it to the same site.
+# One deploy at a time; a second push queues behind this run rather than
+# racing it to the same site.
 concurrency:
   group: pages
   cancel-in-progress: false
@@ -32,46 +31,24 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Check out main
-        uses: actions/checkout@v4
-        with:
-          ref: main
-          path: checkout-main
-
-      - name: Check out doomsday
-        uses: actions/checkout@v4
-        with:
-          ref: doomsday
-          path: checkout-doomsday
-
-      - name: Check out no-way-home
-        uses: actions/checkout@v4
-        with:
-          ref: no-way-home
-          path: checkout-no-way-home
+      - uses: actions/checkout@v4
 
       - name: Assemble the site
         run: |
           set -euo pipefail
           # Everything the browser needs, and nothing else: the art
           # generators and the smoke test do not belong on the site.
-          copy() {
-            rsync -a --exclude '.git' --exclude '.github' --exclude 'tools' \
-                     --exclude 'node_modules' "$1/" "$2/"
-          }
-          mkdir -p site/doomsday site/no-way-home
-          copy checkout-main site
-          copy checkout-doomsday site/doomsday
-          copy checkout-no-way-home site/no-way-home
+          mkdir -p site
+          rsync -a --exclude '.git' --exclude '.github' --exclude 'tools' \
+                   --exclude 'node_modules' --exclude 'site' ./ site/
           # Serve the files as they are; no Jekyll pass.
           touch site/.nojekyll
-          for page in site/index.html site/doomsday/index.html \
-                      site/no-way-home/index.html; do
-            test -f "$page" || { echo "missing $page"; exit 1; }
-            echo "ok  $page"
-          done
+          test -f site/index.html || { echo "missing site/index.html"; exit 1; }
+          echo "ok  site/index.html"
 
       - uses: actions/configure-pages@v5
+        with:
+          enablement: true
 
       - uses: actions/upload-pages-artifact@v3
         with:

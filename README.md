@@ -1,6 +1,6 @@
 # AVENGERS: DOOMSDAY — arcade
 
-A Doomsday-themed reskin of the remastered arcade shooter, on its own branch.
+A Doomsday-themed reskin of the remastered arcade shooter.
 Same engine, different war: you are holding a line against an incursion.
 Doom's Sentinels come through it, his coven of Latverian Witches arrives one
 at a time, and Doom himself waits at wave ten.
@@ -8,16 +8,20 @@ at a time, and Doom himself waits at wave ten.
 The countdown on the menu runs to **18 December 2026**. It is a single
 constant, `RELEASE`, at the top of `src/boot.js`.
 
-> This is the `doomsday` branch. `main` is the Avengers remaster, and nothing
-> here is merged back into it.
+> This repository is the Doomsday game on its own. It began as the
+> `doomsday` branch of
+> [marvel-women-assemble-remastered](https://github.com/Ragar23/marvel-women-assemble-remastered),
+> where `main` is the Avengers remaster; nothing here is merged back into it.
 
 ## Play it
 
-No build step, no dependencies — it is plain HTML, CSS and JS.
+Live at **<https://ragar23.github.io/avengers-doomsday/>**.
+
+To run it locally: no build step, no dependencies — it is plain HTML, CSS and JS.
 
 ```bash
-git clone https://github.com/Ragar23/marvel-women-assemble-remastered.git
-cd marvel-women-assemble-remastered
+git clone https://github.com/Ragar23/avengers-doomsday.git
+cd avengers-doomsday
 python3 -m http.server 5501   # or: npx serve .
 ```
 
