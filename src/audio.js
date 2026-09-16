@@ -1,4 +1,4 @@
-import { heroCards, menuBtn, muteBtn, quitBtn, resumeBtn, retryBtn, showScreen, startBtn, weaponCards, weaponChoice } from "./dom.js";
+import { exitBtn, heroCards, menuBtn, muteBtn, quitBtn, resumeBtn, retryBtn, showScreen, startBtn, weaponCards, weaponChoice } from "./dom.js";
 import { quitToMenu, startRun, togglePause } from "./loop.js";
 import { HEROES } from "./config.js";
 import { sess } from "./state.js";
@@ -279,9 +279,12 @@ weaponCards.forEach((card) => {
 //Thor is selected when the menu opens, so the panel starts open with him.
 syncWeaponChoice();
 
-//The pause overlay is the only way out of a run
+//Two ways out of a run: the pause overlay, and the corner button that skips
+//it. quitToMenu() ignores any state that is not a run, so a stray click on
+//either costs nothing.
 if (resumeBtn) resumeBtn.addEventListener("click", () => togglePause());
 if (quitBtn) quitBtn.addEventListener("click", () => quitToMenu());
+if (exitBtn) exitBtn.addEventListener("click", () => quitToMenu());
 
 startBtn.addEventListener("click", startRun);
 retryBtn.addEventListener("click", startRun);

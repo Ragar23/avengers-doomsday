@@ -236,10 +236,32 @@
       </div>
     </section>
 
+    <!-- The way out, without going through the pause screen first. It sits
+         in the top-left corner of the viewport rather than on the picture:
+         the canvas draws lives and the wave in that corner, and both thumbs
+         are at the bottom, so nothing here is under one. -->
+    <button id="exit-button" class="exit" title="Exit to the main menu (Q)" aria-label="Exit to the main menu">
+      <b>&#10005;</b><small>EXIT</small>
+    </button>
+
     <button id="mute-button" class="mute" title="Mute (M)" aria-label="Mute audio">
       &#9835;
     </button>
 
     <script type="module" src="index.js"></script>
+
+    <!-- Vercel Web Analytics. The plain-HTML form, not @vercel/analytics:
+         the game has no bundler and no React for the framework packages to
+         hook into. The script is served by Vercel's own edge at this path,
+         so it only reports when the site is served from Vercel — anywhere
+         else the request 404s and the queue below is simply never drained. -->
+    <script>
+      window.va =
+        window.va ||
+        function () {
+          (window.vaq = window.vaq || []).push(arguments);
+        };
+    </script>
+    <script defer src="/_vercel/insights/script.js"></script>
   </body>
 </html>

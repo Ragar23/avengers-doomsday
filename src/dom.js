@@ -8,6 +8,7 @@ export const startBtn = document.getElementById("start-button");
 export const retryBtn = document.getElementById("retry-button");
 export const menuBtn = document.getElementById("menu-button");
 export const muteBtn = document.getElementById("mute-button");
+export const exitBtn = document.getElementById("exit-button");
 export const pauseOverlay = document.getElementById("pause-overlay");
 export const touchUltBtn = document.getElementById("touch-ult");
 export const touchPauseBtn = document.getElementById("touch-pause");

@@ -102,10 +102,19 @@ body::after {
 }
 
 /*----------------- Screens -----------------*/
+/* viewport-fit=cover in index.html lets the page reach into the corners of a
+   notched phone, which means every screen has to hold itself off the Dynamic
+   Island and the home indicator on its own. Without this the masthead sat
+   under the Island and START under the indicator on an iPhone 16 Pro. */
 .screen {
   display: none;
   min-height: 100vh;
-  padding: 3vh 4vw;
+  /* svh, not vh: the SMALLEST viewport, the one left when Safari's toolbars
+     are out. vh is the largest, so a menu sized against it is exactly the
+     height of the bars too tall the moment they appear. */
+  min-height: 100svh;
+  padding: max(3vh, env(safe-area-inset-top)) max(4vw, env(safe-area-inset-right))
+    max(3vh, env(safe-area-inset-bottom)) max(4vw, env(safe-area-inset-left));
 }
 
 .screen.is-active {
@@ -120,10 +129,15 @@ body::after {
    on .menu-inner has nothing to measure otherwise. */
 #screen-menu.is-active {
   height: 100vh;
-  height: 100dvh;
+  height: 100svh;
   min-height: 0;
   align-items: stretch;
-  overflow: hidden;
+  /* Was `overflow: hidden`, which is only the right answer while the layout
+     fits. On a phone with the toolbars showing it did not, and the clipped
+     pixels were the START button — the one thing on the screen that has to
+     be reachable. Scrolling is the ugly outcome; an unreachable button is
+     the broken one. The clamps below still keep it to one screen normally. */
+  overflow-y: auto;
 }
 
 @keyframes fade-in {
@@ -142,11 +156,19 @@ body::after {
    overflowing. */
 .menu-inner {
   width: min(1180px, 100%);
-  height: 100%;
+  /* min-height, not height: at 100% exactly it could never be taller than the
+     box it sits in, so the overflow happened inside it and the scroll on the
+     parent had nothing to move. */
+  min-height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  /* `safe` centring only matters in the overflow case, and it is the whole
+     point of it: plain `center` overflows equally in both directions, so the
+     masthead would go out of the top of the scroll box where nothing can
+     reach it. Older engines ignore the second declaration and keep the first. */
+  justify-content: safe center;
   gap: clamp(0.4rem, 1.8vh, 1.1rem);
 }
 
@@ -1094,6 +1116,54 @@ body.is-touch .game-shell {
 }
 
 /*----------------- Mute -----------------*/
+/* Only while a run is on screen. The menu has nothing to exit, and on the
+   game-over screen MAIN MENU already says it in words. */
+.exit {
+  position: fixed;
+  display: none;
+  top: max(1.1rem, env(safe-area-inset-top));
+  left: max(1.1rem, env(safe-area-inset-left));
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.05rem;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  border: 1px solid var(--edge);
+  background: rgba(12, 14, 22, 0.85);
+  color: var(--text);
+  font-family: var(--font);
+  line-height: 1;
+  cursor: pointer;
+  z-index: 10;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+body[data-screen="game"] .exit {
+  display: flex;
+}
+
+.exit b {
+  font-size: 1.05rem;
+}
+
+.exit small {
+  font-size: 0.5rem;
+  letter-spacing: 0.06em;
+  opacity: 0.75;
+}
+
+.exit:hover {
+  transform: scale(1.1);
+  color: var(--red-bright);
+}
+
+.exit:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: 4px;
+}
+
 .mute {
   position: fixed;
   right: 1.1rem;
@@ -1123,7 +1193,8 @@ body.is-touch .game-shell {
 /* ---- phone: the heroes take a row, the other two share the next ---- */
 @media (max-width: 780px) {
   .screen {
-    padding: 2vh 3vw;
+    padding: max(2vh, env(safe-area-inset-top)) max(3vw, env(safe-area-inset-right))
+      max(2vh, env(safe-area-inset-bottom)) max(3vw, env(safe-area-inset-left));
   }
 
   .deck {
