@@ -5,10 +5,11 @@
 # The game is plain HTML, CSS and ES modules, so there is nothing to build;
 # the job only decides what does not belong on the site.
 #
-# `enablement: true` below turns Pages on the first time this runs, so no
-# manual trip to Settings -> Pages is needed. If the site was already set to
-# "Deploy from a branch", change it to "GitHub Actions" or this workflow
-# builds and nothing goes live.
+# Pages must be set to "GitHub Actions" under Settings -> Pages, not
+# "Deploy from a branch", or this workflow builds and nothing goes live.
+# The job cannot do that for itself: creating a Pages site needs
+# `administration: write`, and a workflow's GITHUB_TOKEN has no such
+# permission to request.
 name: Deploy to Pages
 
 on:
@@ -47,8 +48,6 @@ jobs:
           echo "ok  site/index.html"
 
       - uses: actions/configure-pages@v5
-        with:
-          enablement: true
 
       - uses: actions/upload-pages-artifact@v3
         with:
