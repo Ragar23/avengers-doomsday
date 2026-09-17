@@ -3,10 +3,10 @@ import { HEROES } from "./config.js";
 //=====================================================================//
 //  THE LEADERBOARD
 //
-//  Kept in localStorage, because the game has no server and asking for one
-//  to hold ten rows would be a strange trade. That means the board is per
-//  device and per browser, which is worth saying out loud on the screen
-//  rather than letting someone assume otherwise.
+//  Kept in localStorage. This is no longer the only board — remote-scores.js
+//  holds the one everyone shares — but it is the one that cannot fail, so it
+//  stays: it is what the screen falls back to when the network does not
+//  answer, and what a run is written to regardless.
 //=====================================================================//
 const KEY = "doomsday.scores.v1";
 export const BOARD_SIZE = 10;
@@ -52,8 +52,14 @@ function save(rows) {
 //Does this run earn a place? Used to decide whether to ask for a name at all
 //— being asked and then not appearing would be worse than not being asked.
 export function qualifies(score) {
+  return qualifiesAgainst(loadScores(), score);
+}
+
+//The same rule, asked of whichever board is actually on the screen — which
+//is the shared one when it could be reached, and the local one when it
+//could not. Being asked for a name has to agree with what is being shown.
+export function qualifiesAgainst(rows, score) {
   if (score < MIN_SCORE) return false;
-  const rows = loadScores();
   if (rows.length < BOARD_SIZE) return true;
   return score > rows[rows.length - 1].score;
 }

@@ -74,11 +74,24 @@ mostly works too, but a local server is more reliable for the audio and font fil
   harder *because* you are losing. The one way to give ground back is to take
   a whole wave without letting anything through, which pushes it away again.
 
-- **A leaderboard.** Ten best runs, kept on the device in `localStorage` —
-  the game has no server, and asking for one to hold ten rows would be a
-  strange trade, so the screen says where they live. A run is only asked for
-  a name when it actually earned a place: being asked and then not appearing
-  would be worse than not being asked.
+- **A leaderboard everyone shares.** Ten best runs, read from and written to
+  a Postgres table in Supabase, so a name typed on one phone shows up on
+  everybody else's. The device's own `localStorage` board is still there and
+  still written to, and it is what the screen falls back to when the shared
+  board cannot be reached — it goes up first either way, so nobody waits on a
+  request they cannot see, and the note under the board says which of the two
+  they are looking at. A run is only asked for a name when it actually earned
+  a place: being asked and then not appearing would be worse than not being
+  asked.
+
+  The key in `src/remote-scores.js` is Supabase's publishable key and is meant
+  to be read off the page; what it may do is set by row-level security on the
+  table, not by hiding it. Read the board, add a row, nothing else — there is
+  no update policy and no delete policy, so a score cannot be edited or
+  removed once posted, and the columns are bounded in the database rather than
+  only in the client. The game runs in the browser, so a determined person can
+  still post a score they did not earn; the table is built to limit the mess,
+  not to pretend that is impossible.
 
 - **Pausing is the way out.** `Esc` — or the button beside the screen —
   offers RESUME and MAIN MENU, because once a run had started there was no

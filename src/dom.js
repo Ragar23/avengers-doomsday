@@ -26,6 +26,7 @@ export const nameForm = document.getElementById("name-form");
 export const nameInput = document.getElementById("name-input");
 export const leaderboard = document.getElementById("leaderboard");
 export const leaderboardList = document.getElementById("leaderboard-list");
+export const leaderboardNote = document.getElementById("leaderboard-note");
 
 //The menu is the screen the markup ships with, so the attribute has to
 //agree with it before anything is clicked.

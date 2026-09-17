@@ -1,11 +1,12 @@
 import { audio, playMusic, unlockAudio } from "./audio.js";
 import { countUp } from "./boot.js";
 import { CONFIG } from "./config.js";
-import { gameOverTitle, leaderboard, leaderboardList, nameForm, nameInput, pauseOverlay, showScreen, statCombo, statKills, statScore, statWave, touchPauseBtn } from "./dom.js";
+import { gameOverTitle, leaderboard, leaderboardList, leaderboardNote, nameForm, nameInput, pauseOverlay, showScreen, statCombo, statKills, statScore, statWave, touchPauseBtn } from "./dom.js";
 import { draw } from "./render.js";
 import { update } from "./sim.js";
 import { isTouch, releaseAllInput } from "./input.js";
-import { addScore, loadScores, qualifies } from "./scores.js";
+import { addScore, loadScores, NAME_LIMIT, qualifiesAgainst } from "./scores.js";
+import { fetchBoard, postScore, remoteEnabled } from "./remote-scores.js";
 import { fx, resetGame, run, sess } from "./state.js";
 import { clamp } from "./util.js";
 
@@ -166,7 +167,10 @@ export function endGame() {
   showScreen("gameover");
   leaveFullscreen();
   audio.pause();
-  presentBoard();
+  //Async now — it goes and asks for the shared board. It swallows its own
+  //failures, and this catch is only here so a rejection can never reach the
+  //console of a screen that is otherwise fine.
+  presentBoard().catch(() => {});
 }
 
 //=====================================================================//
@@ -192,15 +196,65 @@ function drawBoard(rows, place = -1) {
   });
 }
 
+//Which board is on the screen, said plainly. Someone who has just typed
+//their name deserves to know whether anyone else will see it.
+function setNote(shared) {
+  if (!leaderboardNote) return;
+  leaderboardNote.textContent = shared
+    ? "Every run, from everyone who has played."
+    : "Kept on this device \u2014 the shared board could not be reached.";
+}
+
+//The name a run was saved under, cleaned the same way scores.js cleans it,
+//so the row can be found again on a board that came back from the server.
+function asSaved(name) {
+  return String(name || "").trim().slice(0, NAME_LIMIT) || "ANON";
+}
+
 //Ask for a name only when the run actually earned a place.
-function presentBoard() {
+async function presentBoard() {
   if (!nameForm) return;
-  const earned = qualifies(run.score);
-  nameForm.hidden = !earned;
-  drawBoard(loadScores());
-  if (!earned) return;
-  //Offer back whatever they used last time, so a regular does not retype it
-  nameInput.value = window.localStorage.getItem(LAST_NAME) || "";
+  //The local board goes up first and without waiting for anything: a screen
+  //that arrives filled and then improves reads better than one that sits
+  //empty while a request it cannot see is outstanding.
+  let board = loadScores();
+  drawBoard(board);
+  setNote(false);
+
+  //Decided against the local board first, and decided now: nobody should
+  //wait on a request they cannot see to find out whether they are being
+  //asked for their name.
+  const earnedHere = qualifiesAgainst(board, run.score);
+  nameForm.hidden = !earnedHere;
+  if (earnedHere) offerLastName();
+
+  const shared = remoteEnabled ? await fetchBoard() : null;
+  //TRY AGAIN and MAIN MENU are right there, and four seconds is long enough
+  //to have used one of them. Do not draw on a screen that has moved on.
+  if (sess.state !== "gameover") return;
+  if (shared) {
+    board = shared;
+    drawBoard(board);
+  }
+  setNote(Boolean(shared));
+
+  //The shared board can only widen the offer, never withdraw it. A run good
+  //enough for this device is posted either way, so taking the form back
+  //would remove the only chance to put a name to it — and a run that misses
+  //the local board can still make the shared one, which is worth asking for.
+  if (earnedHere) return;
+  if (!shared || !qualifiesAgainst(board, run.score)) return;
+  nameForm.hidden = false;
+  offerLastName();
+}
+
+//Offer back whatever they used last time, so a regular does not retype it.
+function offerLastName() {
+  try {
+    nameInput.value = window.localStorage.getItem(LAST_NAME) || "";
+  } catch {
+    nameInput.value = "";
+  }
   //Focusing on a phone throws the keyboard up over the screen; let them tap.
   if (!isTouch) nameInput.focus();
 }
@@ -208,17 +262,40 @@ function presentBoard() {
 const LAST_NAME = "doomsday.lastName";
 
 if (nameForm) {
-  nameForm.addEventListener("submit", (event) => {
+  nameForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     const name = nameInput.value.trim();
-    const { rows, place } = addScore(name, run.score, run.wave, sess.chosenHero);
+    //The run goes to this device either way. The shared board is the part
+    //that is allowed to fail, and a failed post should not also cost someone
+    //their own record of the run.
+    const { rows: mine, place: minePlace } = addScore(name, run.score, run.wave, sess.chosenHero);
     try {
       window.localStorage.setItem(LAST_NAME, name);
     } catch {
       /* not being able to remember the name costs nothing */
     }
+
+    //Both of these happen before anything is sent. Taking the form away is
+    //also what stops a second SAVE: a slow network is exactly when someone
+    //presses it again, and the table has no delete policy to undo the
+    //duplicate with.
     nameForm.hidden = true;
-    drawBoard(rows, place);
+    drawBoard(mine, minePlace);
+    if (!remoteEnabled) return;
+
+    const posted = await postScore(name, run.score, run.wave, sess.chosenHero);
+    const shared = posted ? await fetchBoard() : null;
+    if (sess.state !== "gameover") return;
+    if (!shared) {
+      //Their own board still shows the run, and the note stops short of
+      //claiming anyone else can see it.
+      setNote(false);
+      return;
+    }
+    const saved = asSaved(name);
+    const score = Math.floor(run.score);
+    setNote(true);
+    drawBoard(shared, shared.findIndex((r) => r.name === saved && r.score === score));
   });
 }
 
